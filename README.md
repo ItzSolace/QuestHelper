@@ -32,7 +32,7 @@ Don't go into issues and file this, you fucking retards.
 2. `cd Vencord`
 3. `cd src`
 4. `mkdir userplugins`
-5. `git clone https://github.com/itzSolace/QuestHelper`
+5. `git clone https://github.com/ItzSolace/QuestHelper/tree/main/QuestAutocompleter`
 6. `cd ../` (back to vencord)
 7. `pnpm install`
 8. `pnpm build`
