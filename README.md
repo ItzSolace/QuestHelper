@@ -27,16 +27,20 @@ There's also evidence that for accounts under 18, Discord tracks time spent on q
 Don't go into issues and file this, you fucking retards.
 
 ## Installation
-
+#### Installing Vencord
 1. `git clone https://github.com/Vendicated/Vencord/`
 2. `cd Vencord`
+
+#### Installing the plugin
 3. `cd src`
 4. `mkdir userplugins`
-5. `git clone https://github.com/ItzSolace/QuestHelper/tree/main/QuestAutocompleter`
+5. `git clone https://github.com/itzinject/QuestHelper`
 6. `cd ../` (back to vencord)
-7. `pnpm install`
-8. `pnpm build`
-9. `pnpm inject into stable`
+
+#### Building Vencord
+8. `pnpm install`
+9. `pnpm build`
+10. `pnpm inject` into stable (Becouse you guys are stable... right?)
 
 ## Settings
 
