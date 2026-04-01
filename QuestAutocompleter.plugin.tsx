@@ -11,10 +11,20 @@ const settings = definePluginSettings({
         default: false,
         restartNeeded: false
     },
-    logProgress: {
-        type: OptionType.BOOLEAN,
-        description: "Show quest progress in console",
-        default: true,
+    logDestination: {
+        type: OptionType.SELECT,
+        description: "Where to send quest log messages",
+        options: [
+            { label: "Console", value: "console", default: true },
+            { label: "Webhook", value: "webhook" },
+            { label: "Both", value: "both" }
+        ],
+        restartNeeded: false
+    },
+    webhookUrl: {
+        type: OptionType.STRING,
+        description: "Discord webhook URL (used when log destination is Webhook or Both)",
+        default: "",
         restartNeeded: false
     }
 });
@@ -67,9 +77,67 @@ let sessionActive = false;
 
 const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
+
+const webhookQueue: string[] = [];
+let webhookFlushTimer: ReturnType<typeof setInterval> | null = null;
+
+function startWebhookFlusher() {
+    if (webhookFlushTimer !== null) return;
+    webhookFlushTimer = setInterval(flushWebhookQueue, 2000);
+}
+
+function stopWebhookFlusher() {
+    if (webhookFlushTimer !== null) {
+        clearInterval(webhookFlushTimer);
+        webhookFlushTimer = null;
+    }
+}
+
+async function flushWebhookQueue() {
+    if (webhookQueue.length === 0) return;
+
+    const url = settings.store.webhookUrl?.trim();
+    if (!url) return;
+
+
+    const lines: string[] = [];
+    while (webhookQueue.length > 0 && lines.join("\n").length < 1800) {
+        lines.push(webhookQueue.shift()!);
+    }
+
+    const content = `\`\`\`\n${lines.join("\n")}\n\`\`\``;
+
+    try {
+        await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content, username: "QuestHelper" })
+        });
+    } catch (e) {
+      
+        console.error("[QuestHelper] Webhook send failed:", e);
+    }
+}
+
+function sendToWebhook(message: string) {
+    const url = settings.store.webhookUrl?.trim();
+    if (!url) return;
+    webhookQueue.push(message);
+    startWebhookFlusher();
+}
+
 function debug(...args: any[]) {
-    if (settings.store.logProgress) {
-        console.log("[QuestHelper]", ...args);
+    const dest: string = settings.store.logDestination ?? "console";
+    const message = ["[QuestHelper]", ...args].map(a =>
+        typeof a === "object" ? JSON.stringify(a) : String(a)
+    ).join(" ");
+
+    if (dest === "console" || dest === "both") {
+        console.log(message);
+    }
+
+    if (dest === "webhook" || dest === "both") {
+        sendToWebhook(message);
     }
 }
 
@@ -553,6 +621,9 @@ export default definePlugin({
             clearInterval(pollTimer);
             pollTimer = null;
         }
+
+
+        flushWebhookQueue().finally(() => stopWebhookFlusher());
 
         questList = [];
         isProcessing = false;
